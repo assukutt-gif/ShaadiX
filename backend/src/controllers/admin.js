@@ -1,4 +1,4 @@
-import { Booking, Category, Favorite, Notification, Payment, Provider, Review, Service, User, RefreshSession } from '../models/index.js';
+import { Booking, Category, Payment, Provider, Review, Service, User, RefreshSession } from '../models/index.js';
 import { notifyUser } from '../services/notifications.js';
 import { ApiError, asyncHandler, ok, pageOptions, pagination } from '../utils/http.js';
 
@@ -54,6 +54,27 @@ export const listBookings = asyncHandler(async (req, res) => {
     Booking.countDocuments(filter)
   ]);
   return ok(res, rows, 'Bookings retrieved.', 200, pagination(page, limit, total));
+});
+export const listReviews = asyncHandler(async (req, res) => {
+  const { page, limit, skip } = pageOptions(req.query);
+  const filter = {};
+  if (req.query.reported === 'true') filter.isReported = true;
+  if (req.query.reported === 'false') filter.isReported = false;
+  const [rows, total] = await Promise.all([
+    Review.find(filter).populate('userId', 'name email').populate('providerId', 'businessName').sort({ isReported: -1, createdAt: -1 }).skip(skip).limit(limit),
+    Review.countDocuments(filter)
+  ]);
+  return ok(res, rows, 'Reviews retrieved.', 200, pagination(page, limit, total));
+});
+export const moderateReview = asyncHandler(async (req, res) => {
+  const review = await Review.findByIdAndUpdate(req.params.id, { $set: { isVisible: req.body.isVisible, isReported: false, reportReason: '' } }, { new: true, runValidators: true });
+  if (!review) throw new ApiError(404, 'Review not found.');
+  const [summary] = await Review.aggregate([
+    { $match: { providerId: review.providerId, isVisible: true } },
+    { $group: { _id: '$providerId', rating: { $avg: '$rating' }, totalReviews: { $sum: 1 } } }
+  ]);
+  await Provider.updateOne({ _id: review.providerId }, { $set: { rating: summary?.rating ? Math.round(summary.rating * 10) / 10 : 0, totalReviews: summary?.totalReviews || 0 } });
+  return ok(res, review, 'Review moderation updated.');
 });
 export const verifyProvider = asyncHandler(async (req, res) => {
   const provider = await Provider.findById(req.params.id);

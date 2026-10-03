@@ -45,4 +45,13 @@ export const deleteReview = asyncHandler(async (req, res) => {
   await Review.deleteOne({ _id: review._id }); await refreshRating(review.providerId);
   return ok(res, {}, 'Review removed.');
 });
+export const reportReview = asyncHandler(async (req, res) => {
+  const review = await Review.findOne({ _id: req.params.id, isVisible: true });
+  if (!review) throw new ApiError(404, 'Review not found.');
+  if (String(review.userId) === String(req.user._id)) throw new ApiError(400, 'You cannot report your own review.');
+  review.isReported = true;
+  review.reportReason = req.body.reason;
+  await review.save();
+  return ok(res, { id: review.id, isReported: review.isReported }, 'Review reported to the admin team.');
+});
 

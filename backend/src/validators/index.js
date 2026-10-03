@@ -40,6 +40,8 @@ export const bookingActionSchema = z.object({ reason: safeText(500).optional() }
 export const paymentOrderSchema = z.object({ bookingId: id, paymentMethod: z.enum(['UPI', 'CARD', 'NET_BANKING', 'WALLET', 'PAY_LATER', 'RAZORPAY']).default('RAZORPAY') }).strict();
 export const paymentVerifySchema = z.object({ razorpay_order_id: z.string().min(5).max(100), razorpay_payment_id: z.string().min(5).max(100), razorpay_signature: z.string().min(20).max(200) }).strict();
 export const reviewSchema = z.object({ bookingId: id, rating: z.coerce.number().int().min(1).max(5), comment: z.string().trim().min(5).max(2000) }).strict();
+export const reviewReportSchema = z.object({ reason: z.string().trim().min(5).max(500) }).strict();
+export const reviewModerationSchema = z.object({ isVisible: z.boolean() }).strict();
 export const categorySchema = z.object({ name: z.string().trim().min(2).max(100), description: safeText(500).optional(), image: z.string().url().max(500).optional(), isActive: z.boolean().optional() }).strict();
 export const availabilitySchema = z.object({
   availability: z.array(z.object({ dayOfWeek: z.coerce.number().int().min(0).max(6), startTime: time, endTime: time, isAvailable: z.boolean().default(true) }).strict()).max(28),

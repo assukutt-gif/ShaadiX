@@ -98,7 +98,9 @@ const reviewSchema = new Schema({
   rating: { type: Number, required: true, min: 1, max: 5 },
   comment: { type: String, required: true, trim: true, maxlength: 2000 },
   images: [{ type: String }],
-  isVisible: { type: Boolean, default: true }
+  isVisible: { type: Boolean, default: true },
+  isReported: { type: Boolean, default: false, index: true },
+  reportReason: { type: String, trim: true, maxlength: 500, default: '' }
 }, { timestamps: true });
 
 const favoriteSchema = new Schema({

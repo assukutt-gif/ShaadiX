@@ -35,7 +35,7 @@ All routes are prefixed with `/api`; successful responses use `{ "success": true
 | Customer | `/users/me`, `/users/me/avatar`, `/favorites`, `/bookings`, `/reviews`, `/notifications` |
 | Provider | `POST/PUT/DELETE /providers`, `/provider/dashboard`, `/provider/bookings`, `/provider/earnings`, `/provider/availability`, `/services` |
 | Booking/payment | `/bookings`, `/bookings/:id/cancel`, `/bookings/:id/confirm`, `/bookings/:id/complete`, `/payments/create-order`, `/payments/verify` |
-| Admin | `/admin/dashboard`, `/admin/users`, `/admin/providers`, `/admin/bookings`, `/admin/categories`, and management actions |
+| Admin | `/admin/dashboard`, `/admin/users`, `/admin/providers`, `/admin/bookings`, `/admin/reviews`, `/admin/categories`, and management actions |
 
 See the OpenAPI file and Swagger UI for request/response schemas. Booking creation calculates prices on the server and reserves provider availability using a unique 30-minute slot index. Provider opening hours and event dates are evaluated in UTC; clients should send dates/times consistently in that convention until provider-specific time zones are added.
 

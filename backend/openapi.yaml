@@ -332,6 +332,14 @@ paths:
       summary: Review own completed booking
       responses:
         '201': { description: Review created }
+  /reviews/{id}/report:
+    post:
+      tags: [Reviews]
+      summary: Report another customer's review to administrators
+      parameters:
+        - { $ref: '#/components/parameters/id' }
+      responses:
+        '200': { description: Report recorded }
   /notifications:
     get:
       tags: [Notifications]
@@ -370,6 +378,31 @@ paths:
       summary: Search bookings
       responses:
         '200': { description: Bookings }
+  /admin/reviews:
+    get:
+      tags: [Admin]
+      summary: Search reviews and reported reviews
+      parameters:
+        - { in: query, name: reported, schema: { type: boolean } }
+      responses:
+        '200': { description: Reviews and pagination metadata }
+  /admin/reviews/{id}/moderate:
+    put:
+      tags: [Admin]
+      summary: Hide or restore a review
+      parameters:
+        - { $ref: '#/components/parameters/id' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [isVisible]
+              properties:
+                isVisible: { type: boolean }
+      responses:
+        '200': { description: Review moderation updated }
   /admin/categories:
     get:
       tags: [Admin]
@@ -382,7 +415,7 @@ paths:
       responses:
         '201': { description: Category created }
   /admin/providers/{id}/verify:
-    post:
+    put:
       tags: [Admin]
       summary: Approve provider
       parameters:
