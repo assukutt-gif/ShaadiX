@@ -1,0 +1,404 @@
+openapi: 3.0.3
+info:
+  title: ShaadiX API
+  version: 1.0.0
+  description: Event service discovery, booking, provider workspace, payments, reviews, and admin API.
+servers:
+  - url: /api
+security:
+  - bearerAuth: []
+tags:
+  - name: Health
+  - name: Authentication
+  - name: Discovery
+  - name: Users
+  - name: Providers
+  - name: Bookings
+  - name: Payments
+  - name: Reviews
+  - name: Favorites
+  - name: Notifications
+  - name: Admin
+paths:
+  /health:
+    get:
+      tags: [Health]
+      security: []
+      summary: Check API and database availability
+      responses:
+        '200': { description: API and database are available }
+        '503': { description: Database is unavailable }
+  /categories:
+    get:
+      tags: [Discovery]
+      security: []
+      summary: List active event and service categories
+      responses:
+        '200': { description: Category list }
+  /auth/register:
+    post:
+      tags: [Authentication]
+      security: []
+      summary: Register a customer or provider login and send an email OTP
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, email, phone, password]
+              properties:
+                name: { type: string }
+                email: { type: string, format: email }
+                phone: { type: string, example: '+919876543210' }
+                password: { type: string, minLength: 10 }
+                role: { type: string, enum: [customer, provider], default: customer }
+      responses:
+        '201': { description: User created; verification required }
+        '422': { description: Invalid input }
+  /auth/login:
+    post:
+      tags: [Authentication]
+      security: []
+      summary: Sign in and receive access and refresh tokens
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string }
+      responses:
+        '200': { description: Authenticated }
+        '401': { description: Invalid credentials or unverified account }
+  /auth/verify-otp:
+    post:
+      tags: [Authentication]
+      security: []
+      summary: Verify email OTP
+      responses:
+        '200': { description: Verification completed }
+        '400': { description: Code invalid or expired }
+  /auth/forgot-password:
+    post:
+      tags: [Authentication]
+      security: []
+      summary: Request a password reset code
+      responses:
+        '200': { description: Generic response to protect account privacy }
+  /auth/reset-password:
+    post:
+      tags: [Authentication]
+      security: []
+      summary: Reset password using a verified email code
+      responses:
+        '200': { description: Password reset }
+  /auth/refresh:
+    post:
+      tags: [Authentication]
+      security: []
+      summary: Rotate a refresh token
+      responses:
+        '200': { description: New access and refresh tokens }
+  /auth/logout:
+    post:
+      tags: [Authentication]
+      summary: Revoke refresh token
+      responses:
+        '200': { description: Logged out }
+  /services:
+    get:
+      tags: [Discovery]
+      security: []
+      summary: Search active services; supports category, city, keyword, price, rating, date, page, and limit filters
+      parameters:
+        - { in: query, name: keyword, schema: { type: string } }
+        - { in: query, name: category, schema: { type: string } }
+        - { in: query, name: city, schema: { type: string } }
+        - { in: query, name: minPrice, schema: { type: number } }
+        - { in: query, name: maxPrice, schema: { type: number } }
+        - { in: query, name: rating, schema: { type: number, minimum: 0, maximum: 5 } }
+        - { in: query, name: eventDate, schema: { type: string, format: date } }
+        - { in: query, name: page, schema: { type: integer, minimum: 1 } }
+        - { in: query, name: limit, schema: { type: integer, minimum: 1, maximum: 100 } }
+      responses:
+        '200': { description: Matching services and pagination metadata }
+    post:
+      tags: [Providers]
+      summary: Create service listing (provider/admin)
+      responses:
+        '201': { description: Service created }
+        '401': { description: Authentication required }
+  /services/search:
+    get:
+      tags: [Discovery]
+      security: []
+      summary: Search active services (same filters as GET /services)
+      responses:
+        '200': { description: Matching services }
+  /services/{id}:
+    parameters:
+      - { $ref: '#/components/parameters/id' }
+    get:
+      tags: [Discovery]
+      security: []
+      summary: Get service details
+      responses:
+        '200': { description: Service details }
+        '404': { description: Service not found }
+    put:
+      tags: [Providers]
+      summary: Update owned service
+      responses:
+        '200': { description: Service updated }
+    delete:
+      tags: [Providers]
+      summary: Deactivate owned service
+      responses:
+        '200': { description: Service deactivated }
+  /providers:
+    get:
+      tags: [Discovery]
+      security: []
+      summary: List verified providers
+      responses:
+        '200': { description: Providers and pagination metadata }
+    post:
+      tags: [Providers]
+      summary: Create provider business profile
+      responses:
+        '201': { description: Provider profile created and pending admin verification }
+  /providers/{id}:
+    parameters:
+      - { $ref: '#/components/parameters/id' }
+    get:
+      tags: [Discovery]
+      security: []
+      summary: Get provider profile
+      responses:
+        '200': { description: Provider profile }
+    put:
+      tags: [Providers]
+      summary: Update own provider profile
+      responses:
+        '200': { description: Provider profile updated }
+    delete:
+      tags: [Providers]
+      summary: Deactivate provider profile
+      responses:
+        '200': { description: Provider deactivated }
+  /provider/dashboard:
+    get:
+      tags: [Providers]
+      summary: Provider dashboard summary
+      responses:
+        '200': { description: Provider statistics }
+  /provider/bookings:
+    get:
+      tags: [Providers]
+      summary: List this provider's bookings
+      responses:
+        '200': { description: Provider bookings }
+  /provider/earnings:
+    get:
+      tags: [Providers]
+      summary: Provider payment and earnings summary
+      responses:
+        '200': { description: Earnings summary }
+  /provider/availability:
+    put:
+      tags: [Providers]
+      summary: Set weekly hours and blocked dates
+      responses:
+        '200': { description: Availability updated }
+  /users/me:
+    get:
+      tags: [Users]
+      summary: Get own profile
+      responses:
+        '200': { description: Profile }
+    put:
+      tags: [Users]
+      summary: Update own profile
+      responses:
+        '200': { description: Updated profile }
+  /users/me/avatar:
+    post:
+      tags: [Users]
+      summary: Upload own profile image (multipart image)
+      responses:
+        '200': { description: Updated image URL }
+  /bookings:
+    get:
+      tags: [Bookings]
+      summary: List own bookings
+      responses:
+        '200': { description: Bookings and pagination metadata }
+    post:
+      tags: [Bookings]
+      summary: Request booking; server calculates total and reserves availability
+      responses:
+        '201': { description: Booking pending provider confirmation }
+        '409': { description: Provider is unavailable }
+  /bookings/{id}:
+    parameters:
+      - { $ref: '#/components/parameters/id' }
+    get:
+      tags: [Bookings]
+      summary: Get booking owned by current customer, assigned provider, or admin
+      responses:
+        '200': { description: Booking details }
+        '403': { description: Not authorized }
+  /bookings/{id}/cancel:
+    put:
+      tags: [Bookings]
+      summary: Cancel an unpaid pending/confirmed booking
+      responses:
+        '200': { description: Booking cancelled }
+        '409': { description: Booking cannot be cancelled or payment needs support review }
+  /bookings/{id}/confirm:
+    put:
+      tags: [Bookings]
+      summary: Provider confirms a pending booking
+      responses:
+        '200': { description: Booking confirmed }
+  /bookings/{id}/reject:
+    put:
+      tags: [Bookings]
+      summary: Provider rejects a pending booking and releases the reserved slot
+      parameters:
+        - { $ref: '#/components/parameters/id' }
+      responses:
+        '200': { description: Booking rejected }
+  /bookings/{id}/complete:
+    put:
+      tags: [Bookings]
+      summary: Provider marks a confirmed booking complete
+      responses:
+        '200': { description: Booking completed }
+  /payments/create-order:
+    post:
+      tags: [Payments]
+      summary: Create Razorpay order for own booking or select Pay Later
+      responses:
+        '201': { description: Razorpay order created }
+        '503': { description: Payment gateway is not configured }
+  /payments/verify:
+    post:
+      tags: [Payments]
+      summary: Verify Razorpay signature and server-side captured payment
+      responses:
+        '200': { description: Payment verified }
+        '400': { description: Signature invalid }
+  /payments/{id}:
+    get:
+      tags: [Payments]
+      summary: Get own payment record
+      parameters:
+        - { $ref: '#/components/parameters/id' }
+      responses:
+        '200': { description: Payment }
+  /favorites:
+    get:
+      tags: [Favorites]
+      summary: List own saved providers
+      responses:
+        '200': { description: Favorites }
+    post:
+      tags: [Favorites]
+      summary: Save provider to favorites
+      responses:
+        '201': { description: Favorite created }
+  /favorites/{id}:
+    delete:
+      tags: [Favorites]
+      summary: Remove provider from favorites
+      parameters:
+        - { $ref: '#/components/parameters/id' }
+      responses:
+        '200': { description: Favorite removed }
+  /reviews:
+    get:
+      tags: [Reviews]
+      security: []
+      summary: List visible reviews
+      responses:
+        '200': { description: Reviews }
+    post:
+      tags: [Reviews]
+      summary: Review own completed booking
+      responses:
+        '201': { description: Review created }
+  /notifications:
+    get:
+      tags: [Notifications]
+      summary: List own notifications
+      responses:
+        '200': { description: Notifications }
+  /notifications/{id}/read:
+    put:
+      tags: [Notifications]
+      summary: Mark own notification read
+      parameters:
+        - { $ref: '#/components/parameters/id' }
+      responses:
+        '200': { description: Notification updated }
+  /admin/dashboard:
+    get:
+      tags: [Admin]
+      summary: Admin platform metrics
+      responses:
+        '200': { description: Dashboard summary }
+  /admin/users:
+    get:
+      tags: [Admin]
+      summary: Search and paginate users
+      responses:
+        '200': { description: Users }
+  /admin/providers:
+    get:
+      tags: [Admin]
+      summary: Search providers and review approvals
+      responses:
+        '200': { description: Providers }
+  /admin/bookings:
+    get:
+      tags: [Admin]
+      summary: Search bookings
+      responses:
+        '200': { description: Bookings }
+  /admin/categories:
+    get:
+      tags: [Admin]
+      summary: List categories
+      responses:
+        '200': { description: Categories }
+    post:
+      tags: [Admin]
+      summary: Create category
+      responses:
+        '201': { description: Category created }
+  /admin/providers/{id}/verify:
+    post:
+      tags: [Admin]
+      summary: Approve provider
+      parameters:
+        - { $ref: '#/components/parameters/id' }
+      responses:
+        '200': { description: Provider approved }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    id:
+      in: path
+      name: id
+      required: true
+      schema: { type: string, pattern: '^[a-fA-F0-9]{24}$' }
+

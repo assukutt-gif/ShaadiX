@@ -1,0 +1,34 @@
+{
+  "name": "shaadix-backend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "REST API and real-time services for ShaadiX",
+  "type": "module",
+  "engines": { "node": ">=22.12.0" },
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "seed": "node src/seed.js",
+    "seed:admin": "node src/seed.js --admin"
+  },
+  "dependencies": {
+    "bcryptjs": "3.0.3",
+    "cloudinary": "2.7.0",
+    "compression": "1.8.1",
+    "cors": "2.8.5",
+    "dotenv": "17.2.3",
+    "express": "5.2.1",
+    "express-rate-limit": "8.2.1",
+    "helmet": "8.1.0",
+    "jsonwebtoken": "9.0.2",
+    "mongoose": "9.10.3",
+    "morgan": "1.10.1",
+    "multer": "2.0.2",
+    "nodemailer": "7.0.10",
+    "razorpay": "2.9.6",
+    "socket.io": "4.8.1",
+    "swagger-ui-express": "5.0.1",
+    "zod": "4.1.12"
+  }
+}
+
