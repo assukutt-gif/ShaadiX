@@ -1,0 +1,56 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function own(uid) { return signedIn() && request.auth.uid == uid; }
+    function admin() {
+      return signedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    function provider(uid) {
+      return signedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'provider'
+        && get(/databases/$(database)/documents/providers/$(request.auth.uid)).data.status == 'approved';
+    }
+    match /users/{uid} {
+      allow create: if own(uid) && request.resource.data.role == 'customer';
+      allow read: if own(uid) || admin();
+      allow update: if own(uid) && request.resource.data.role == resource.data.role;
+      allow delete: if admin();
+    }
+    match /providers/{uid} {
+      allow read: if resource.data.status == 'approved' || own(uid) || admin();
+      allow create: if own(uid) && request.resource.data.status == 'pending';
+      allow update: if (own(uid) && request.resource.data.status == resource.data.status) || admin();
+      allow delete: if admin();
+    }
+    match /services/{serviceId} {
+      allow read: if resource.data.published == true || admin();
+      allow create: if signedIn() && request.resource.data.providerId == request.auth.uid
+        && provider(request.auth.uid) && request.resource.data.published == false;
+      allow update, delete: if (signedIn() && resource.data.providerId == request.auth.uid && provider(request.auth.uid)) || admin();
+    }
+    match /categories/{id} { allow read: if true; allow write: if admin(); }
+    match /bookings/{id} {
+      allow create: if signedIn() && request.resource.data.customerId == request.auth.uid && request.resource.data.status == 'PENDING';
+      allow read: if signedIn() && (resource.data.customerId == request.auth.uid
+        || (resource.data.providerId == request.auth.uid && provider(request.auth.uid)) || admin());
+      allow update: if signedIn() && ((resource.data.customerId == request.auth.uid
+        && request.resource.data.customerId == resource.data.customerId && request.resource.data.status in ['CANCELLED', 'PENDING'])
+        || (resource.data.providerId == request.auth.uid && provider(request.auth.uid)
+        && request.resource.data.providerId == resource.data.providerId) || admin());
+      allow delete: if admin();
+    }
+    match /payments/{id} {
+      allow read: if signedIn() && (resource.data.customerId == request.auth.uid || admin());
+      allow create, update, delete: if false;
+    }
+    match /reviews/{id} {
+      allow read: if resource.data.visible == true || admin();
+      allow create: if signedIn() && request.resource.data.customerId == request.auth.uid
+        && request.resource.data.rating is int && request.resource.data.rating >= 1 && request.resource.data.rating <= 5;
+      allow update: if signedIn() && resource.data.customerId == request.auth.uid && request.resource.data.customerId == resource.data.customerId;
+      allow delete: if admin();
+    }
+    match /favorites/{uid}/items/{id} { allow read, write: if own(uid) || admin(); }
+    match /notifications/{id} { allow read: if signedIn() && resource.data.userId == request.auth.uid; allow write: if admin(); }
+  }
+}
