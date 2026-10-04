@@ -1,28 +1,33 @@
 # ShaadiX
 
-**Plan. Book. Celebrate.** ShaadiX is a native Android event-service discovery and booking starter built with Kotlin, Jetpack Compose, Material 3 and Navigation Compose. The current version is a polished demo: it starts in a guest flow, includes sample listings, local search/favorites/booking state, mock checkout, bookings, and provider/admin dashboard surfaces.
+**Plan. Book. Celebrate.** ShaadiX is a native Android event discovery and booking app built with Kotlin, Jetpack Compose, Material 3 and Navigation Compose. The app includes customer discovery and booking, authentication, provider tools, admin management, notifications, favorites and a sample-data mode.
 
-## Open in Android Studio
+## Android app setup
 
-Open this repository as a Gradle project. Use JDK 17 and Android SDK 36. The application ID is **com.assukutt.shaadix**; minimum Android version is API 24.
+1. Open this repository in Android Studio with JDK 17 and Android SDK 36 installed.
+2. Start the API described in [backend/README.md](backend/README.md). For an Android emulator, the default API address is `http://10.0.2.2:5000/api/`.
+3. To use another API host, set the Gradle property `SHAADIX_API_BASE_URL` to an API root ending in `/api/`, for example `-PSHAADIX_API_BASE_URL=https://api.example.com/api/`. Use HTTPS for deployed services.
+4. Start the app. If the API is unavailable, ShaadiX keeps sample listings available for exploration. Live sign-in, account, provider and admin actions require a running backend and the corresponding role.
 
-## Firebase setup
+## Connected features
 
-1. Create an Android app in Firebase with application ID com.assukutt.shaadix.
-2. Download google-services.json into app/ (it is intentionally ignored by Git).
-3. Enable Email/Password and Phone authentication as needed; add Google sign-in SHA fingerprints for your app.
-4. Create Firestore and Storage, then deploy firestore.rules and storage.rules.
-5. Add the Firebase project configuration before using email sign-in. Without it, guest mode, sample discovery and mock booking run locally.
+- Email and password account flows, email OTP verification, password reset, and refresh-token rotation.
+- Service discovery with search and filters, service details, favorites, booking creation and cancellation.
+- Provider profile, service listing image uploads, availability and booking management.
+- Admin overview and moderation/management screens, gated by backend admin permissions.
+- Razorpay checkout. Configure the key ID and secret in the backend environment; the Android app receives only the public key ID and server-created order. Payment signatures are sent back to the backend for verification. No card data is stored by ShaadiX.
+- Dark mode, onboarding preference and encrypted-at-rest access/refresh tokens using the Android Keystore.
 
-The Firebase repository currently provides email sign-in and a booking write primitive. The demo UI uses local sample state for immediate exploration. Wire account creation, live Firestore streams, uploads, provider approval, and FCM token registration before using this as a live service.
+## Firebase push notifications
 
-## Demo behavior
+For push notification display, create a Firebase Android app using application ID `com.assukutt.shaadix`, download `google-services.json` into `app/`, and configure Firebase Cloud Messaging. The Firebase Gradle plugin is applied only when this file exists. Notification permission is needed on Android 13 and later. The backend currently stores notifications and sends them over its real-time channel; FCM device-token registration/delivery requires an integration endpoint and credentials.
 
-- The OTP screen accepts 123456 for the local preview flow.
-- Confirming a booking updates the on-device demo list; payment choices are UI only and no money is collected.
-- Provider studio and admin overview use sample metrics. Server-enforced roles must be assigned through a trusted backend.
-- Service photography loads from Unsplash URLs; replace with licensed production assets before publishing.
+## Demo behavior and configuration
 
-## Production follow-up
+- Guest mode uses realistic local sample listings and local-only booking/favorite interactions. Demo checkout never charges money.
+- Online booking and payment need a real signed-in customer, a live backend service listing, and configured Razorpay credentials on the backend.
+- Cloud image uploads require Cloudinary settings on the backend. Never place Razorpay secrets, Firebase service account credentials, or other private keys in the Android client.
+- Cleartext networking is permitted only for the Android emulator host `10.0.2.2`; deployed APIs should use HTTPS.
 
-Payment intent creation, refunds, identity checks, rate limiting, audit logs, phone OTP delivery, Google credential exchange, notification channels, review photo uploads, and provider/admin workflows need trusted backend functions. Never put payment secrets or service-account keys in the Android client. Review the Firestore/Storage rules against the final data schema before deployment.
+The companion Node.js/MongoDB API, environment configuration, sample data seeding and endpoint documentation are in [backend/README.md](backend/README.md).
+
