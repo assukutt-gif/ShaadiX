@@ -1,4 +1,4 @@
-Warning: truncated output (original token count: 18951)
+Warning: truncated output (original token count: 18950)
 Total output lines: 586
 
 package com.assukutt.shaadix.ui
@@ -184,7 +184,7 @@ class ShaadiXViewModel(private val repository:ShaadiXBackendRepository=(AppConte
     fun verifyPayment(orderId:String,paymentId:String,signature:String){
         viewModelScope.launch{runCatching{repository.verifyPayment(orderId,paymentId,signature)}.onSuccess{
             currentBooking?.let{booking->val index=bookings.indexOfFirst{it.id==booking.id};if(index>=0){val paid=booking.copy(paymentStatus="PAID");bookings[index]=paid;currentBooking=paid}}
-            message="Payment verified · your booking is confirmed";checkoutOrder=null
+            message="Payment verified · booking request sent";checkoutOrder=null
         }.onFailure{message="Payment was received, but verification is pending. Contact support before trying to pay again."}}
     }
     fun cancel(booking:Booking){
@@ -348,7 +348,7 @@ class ShaadiXViewModel(private val repository:ShaadiXBackendRepository=(AppConte
     LazyColumn(contentPadding=PaddingValues(bottom=20.dp),verticalArrangement=Arrangement.spacedBy(16.dp)){
         item{Header("Good morning, ${vm.name.substringBefore(" ")} ✨",end={IconButton(onClick={nav.navigate("notifications")}){Icon(Icons.Default.NotificationsNone,null,tint=Royal)}});Row(Modifier.padding(horizontal=20.dp),verticalAlignment=Alignment.CenterVertically){Icon(Icons.Default.LocationOn,null,tint=Violet);Text("Kochi, Kerala");Spacer(Modifier.weight(1f));TextButton(onClick={vm.message="Location selector · Kochi"}){Text("CHANGE")}}}
         item{Box(Modifier.fillMaxWidth().padding(horizontal=20.dp).height(190.dp).clip(RoundedCornerShape(24.dp))){
-            AsyncImage("https://images.unsplash.com/photo-1519…951 tokens truncated…(horizontal=20.dp),color=Muted,style=MaterialTheme.typography.labelSmall)
+            AsyncImage("https://images.unsplash.com/photo-151974149…950 tokens truncated…(horizontal=20.dp),color=Muted,style=MaterialTheme.typography.labelSmall)
         if(state is UiState.Loading&&vm.services.isEmpty())Box(Modifier.fillMaxWidth().weight(1f),contentAlignment=Alignment.Center){CircularProgressIndicator(color=Royal)}
         else {val list=vm.results();if(list.isEmpty())Box(Modifier.fillMaxWidth().weight(1f),contentAlignment=Alignment.Center){Blank("Nothing found yet","Try a different category or search.")}else LazyColumn(Modifier.weight(1f),contentPadding=PaddingValues(horizontal=18.dp,vertical=4.dp),verticalArrangement=Arrangement.spacedBy(12.dp)){items(list,key={it.id}){Tile(it,vm,nav)};if(vm.hasMoreServices)item{TextButton(onClick=vm::loadMoreServices,Modifier.fillMaxWidth()){Text("Load more")}}}}
     }
