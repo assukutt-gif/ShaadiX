@@ -4,19 +4,29 @@ data class Service(
     val id: String, val title: String, val category: String, val provider: String,
     val area: String, val price: Int, val rating: Double, val reviews: Int,
     val image: String, val description: String,
-    val includes: List<String> = listOf("Dedicated event coordinator", "Setup and teardown", "Flexible date rescheduling")
+    val includes: List<String> = listOf("Dedicated event coordinator", "Setup and teardown", "Flexible date rescheduling"),
+    val providerId: String? = null,
+    val gallery: List<String> = listOf(image),
+    val availableDates: List<String> = emptyList()
 )
 
 data class Booking(
     val id: String, val service: Service, val date: String, val event: String,
-    val guests: Int, val total: Int, val status: BookingStatus
+    val guests: Int, val total: Int, val status: BookingStatus,
+    val eventLocation: String = "Kochi, Kerala", val startTime: String = "18:00", val endTime: String = "21:00", val paymentStatus:String = "PENDING"
 )
 
-enum class BookingStatus { CONFIRMED, PENDING, COMPLETED, CANCELLED }
+enum class BookingStatus { CONFIRMED, PENDING, COMPLETED, CANCELLED, REJECTED }
+
+sealed interface UiState<out T> {
+    data object Loading : UiState<Nothing>
+    data class Success<T>(val value: T) : UiState<T>
+    data class Error(val message: String) : UiState<Nothing>
+}
 
 object SampleData {
     val categories = listOf("Wedding", "Engagement", "College Function", "Birthday", "Reception", "Corporate", "Cultural")
-    val serviceTypes = listOf("Venues", "Decor", "Catering", "Photography", "Makeup", "Music", "Mehendi", "Planners")
+    val serviceTypes = listOf("Function Hall", "Marriage Hall", "Decoration", "Catering", "Photography", "Videography", "Makeup Artists", "Mehendi", "DJ & Music", "Event Planner", "Invitation Design", "Wedding Cars")
     val services = listOf(
         Service("v1", "The Courtyard Palace", "Venues", "The Courtyard Palace", "Kakkanad, Kochi", 85000, 4.9, 128, "https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=1000", "A light-filled celebration space with garden lawns and a grand indoor hall for unforgettable gatherings."),
         Service("d1", "Petal & Pearl Decor", "Decor", "Petal & Pearl", "Panampilly Nagar, Kochi", 42000, 4.8, 86, "https://images.unsplash.com/photo-1519225421980-715cb0215aed?w=1000", "Thoughtful floral styling, warm candlelight and custom mandap design for celebrations with character."),
@@ -27,3 +37,4 @@ object SampleData {
     )
     val initialBookings = listOf(Booking("SX-2048", services[0], "18 Dec 2026", "Wedding", 280, 91000, BookingStatus.CONFIRMED))
 }
+
