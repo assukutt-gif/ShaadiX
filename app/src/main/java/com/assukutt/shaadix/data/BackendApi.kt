@@ -32,7 +32,7 @@ import java.util.concurrent.TimeUnit
 data class ApiEnvelope<T>(val success: Boolean = false, val message: String = "", val data: T? = null)
 data class ApiUser(val id: String = "", val name: String = "", val email: String = "", val phone: String = "", val role: String = "customer")
 data class AuthPayload(val accessToken: String = "", val refreshToken: String = "", val user: ApiUser = ApiUser())
-data class LoginRequest(val email: String, val password: String)
+data class LoginRequest(val identifier: String, val password: String)
 data class RegisterRequest(val name: String, val email: String, val phone: String, val password: String, val role: String)
 data class OtpRequest(val email: String, val code: String, val purpose: String = "verify")
 data class ForgotPasswordRequest(val email: String)
@@ -156,8 +156,8 @@ private class SessionAuthenticator(private val tokens: SecureTokenStore) : Authe
 }
 
 class ShaadiXBackendRepository(private val api: ShaadiXApi, private val tokens: SecureTokenStore) {
-    suspend fun signIn(email: String, password: String): ApiUser {
-        val response = api.login(LoginRequest(email.trim(), password))
+    suspend fun signIn(identifier: String, password: String): ApiUser {
+        val response = api.login(LoginRequest(identifier.trim(), password))
         val payload = response.requireData()
         tokens.save(payload.accessToken, payload.refreshToken)
         return payload.user

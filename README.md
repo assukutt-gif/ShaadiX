@@ -11,7 +11,7 @@
 
 ## Connected features
 
-- Email and password account flows, email OTP verification, password reset, and refresh-token rotation.
+- Email or international phone number sign-in with password, email OTP verification, password reset, and refresh-token rotation.
 - Service discovery with search and filters, service details, favorites, booking creation and cancellation.
 - Provider profile, service listing image uploads, availability and booking management.
 - Admin overview and moderation/management screens, gated by backend admin permissions.

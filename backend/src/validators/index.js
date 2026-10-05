@@ -12,7 +12,11 @@ export const registerSchema = z.object({
   name, email: z.string().trim().email().max(254), phone, password,
   role: z.enum(['customer', 'provider']).default('customer')
 }).strict();
-export const loginSchema = z.object({ email: z.string().trim().email().max(254), password: z.string().min(1).max(128) }).strict();
+export const loginSchema = z.object({ identifier: z.string().trim().min(1).max(254), password: z.string().min(1).max(128) }).strict()
+  .refine(({ identifier }) => identifier.includes('@')
+    ? z.string().email().safeParse(identifier).success
+    : /^([+])?[1-9][0-9]{6,14}$/.test(identifier),
+  { path: ['identifier'], message: 'Enter a valid email address or international phone number.' });
 export const verifyOtpSchema = z.object({ email: z.string().trim().email(), code: z.string().regex(/^[0-9]{6}$/), purpose: z.enum(['verify', 'reset']).default('verify') }).strict();
 export const forgotPasswordSchema = z.object({ email: z.string().trim().email() }).strict();
 export const resetPasswordSchema = z.object({ resetToken: z.string().min(20).max(2000), password }).strict();

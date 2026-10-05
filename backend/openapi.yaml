@@ -67,9 +67,9 @@ paths:
           application/json:
             schema:
               type: object
-              required: [email, password]
+              required: [identifier, password]
               properties:
-                email: { type: string, format: email }
+                identifier: { type: string, description: Email address or international phone number }
                 password: { type: string }
       responses:
         '200': { description: Authenticated }

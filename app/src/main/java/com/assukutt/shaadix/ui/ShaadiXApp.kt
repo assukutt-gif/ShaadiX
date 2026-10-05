@@ -1,6 +1,3 @@
-Warning: truncated output (original token count: 18950)
-Total output lines: 586
-
 package com.assukutt.shaadix.ui
 
 import android.content.Context
@@ -116,9 +113,15 @@ class ShaadiXViewModel(private val repository:ShaadiXBackendRepository=(AppConte
     fun isFavorite(s:Service)=s.id in favorites||(s.providerId!=null&&s.providerId in favorites)
     fun exploreAsGuest(){guestMode=true;role="customer";signedIn=true}
     fun signIn(e:String,p:String){
-        if(!e.contains("@")||p.length<8){message="Enter a valid email and a password with at least 8 characters.";return}
+        val identifier=e.trim()
+        val validEmail=identifier.matches(Regex("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$"))
+        val normalizedPhone=identifier.filter{it.isDigit()||it=='+'}
+        val phoneInputOnly=identifier.all{it.isDigit()||it=='+'||it.isWhitespace()||it=='-'||it=='('||it==')'}
+        val validPhone=phoneInputOnly&&normalizedPhone.matches(Regex("^\\+?[1-9][0-9]{6,14}$"))
+        if((!validEmail&&!validPhone)||p.isBlank()){message="Enter a valid email or phone number and your password.";return}
+        message=null
         authLoading=true
-        viewModelScope.launch{runCatching{repository.signIn(e,p)}.onSuccess{user->email=user.email;phone=user.phone;name=user.name;role=user.role;guestMode=false;signedIn=true;loadAccountData()}.onFailure{message="Sign in failed. Check your details or explore as a guest."}.also{authLoading=false}}
+        viewModelScope.launch{runCatching{repository.signIn(if(validEmail)identifier else normalizedPhone,p)}.onSuccess{user->email=user.email;phone=user.phone;name=user.name;role=user.role;guestMode=false;signedIn=true;loadAccountData()}.onFailure{message="Sign in failed. Check your email/phone and password."}.also{authLoading=false}}
     }
     fun signUp(n:String,e:String,phone:String,p:String,accountRole:String){
         if(n.isBlank()||!e.contains("@")||phone.filter(Char::isDigit).length<10||p.length<10){message="Add your name, a valid email and phone, and a password with at least 10 characters.";return}
@@ -305,7 +308,7 @@ class ShaadiXViewModel(private val repository:ShaadiXBackendRepository=(AppConte
 }
 
 @Composable private fun Welcome(vm:ShaadiXViewModel){
-    var e by remember{mutableStateOf("")};var p by remember{mutableStateOf("")};var confirm by remember{mutableStateOf("")};var n by remember{mutableStateOf("")};var create by remember{mutableStateOf(false)};var phone by remember{mutableStateOf("")};var code by remember{mutableStateOf("")};var accountRole by remember{mutableStateOf("customer")}
+    var e by remember{mutableStateOf("")};var p by remember{mutableStateOf("")};var confirm by remember{mutableStateOf("")};var n by remember{mutableStateOf("")};var create by remember{mutableStateOf(false)};var phone by remember{mutableStateOf("")};var code by remember{mutableStateOf("")};var accountRole by remember{mutableStateOf("customer")};var passwordVisible by remember{mutableStateOf(false)}
     Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0xFF321848),Royal,Violet)))){
         Column(Modifier.align(Alignment.Center).fillMaxWidth().heightIn(max=800.dp).verticalScroll(rememberScrollState()).padding(22.dp),horizontalAlignment=Alignment.CenterHorizontally){
             Text("S",color=Gold,style=MaterialTheme.typography.displayMedium,fontWeight=FontWeight.Bold);Text("ShaadiX",color=Color.White,style=MaterialTheme.typography.headlineLarge,fontWeight=FontWeight.Bold);Text("Plan. Book. Celebrate.",color=Color(0xFFF1DBAE));Spacer(Modifier.height(20.dp))
@@ -320,10 +323,10 @@ class ShaadiXViewModel(private val repository:ShaadiXBackendRepository=(AppConte
                         OutlinedTextField(phone,{phone=it},Modifier.fillMaxWidth(),label={Text("Mobile number")},keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.Phone),singleLine=true)
                         Text("I’m joining as",color=Muted);Row(horizontalArrangement=Arrangement.spacedBy(8.dp)){listOf("customer" to "Customer","provider" to "Service provider").forEach{(value,label)->FilterChip(accountRole==value,{accountRole=value},label={Text(label)})}}
                     }
-                    OutlinedTextField(e,{e=it},Modifier.fillMaxWidth(),label={Text("Email address")},keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.Email),singleLine=true)
-                    OutlinedTextField(p,{p=it},Modifier.fillMaxWidth(),label={Text("Password")},visualTransformation=PasswordVisualTransformation(),singleLine=true)
+                    OutlinedTextField(e,{e=it},Modifier.fillMaxWidth(),label={Text(if(create)"Email address" else "Email or phone number")},placeholder={if(!create)Text("you@example.com or +919876543210")},keyboardOptions=KeyboardOptions(keyboardType=if(create)KeyboardType.Email else KeyboardType.Text),singleLine=true)
+                    OutlinedTextField(p,{p=it},Modifier.fillMaxWidth(),label={Text("Password")},visualTransformation=if(passwordVisible)VisualTransformation.None else PasswordVisualTransformation(),singleLine=true,trailingIcon={IconButton(onClick={passwordVisible=!passwordVisible},enabled=!vm.authLoading){Icon(if(passwordVisible)Icons.Default.VisibilityOff else Icons.Default.Visibility,contentDescription=if(passwordVisible)"Hide password" else "Show password")}})
                     if(create)OutlinedTextField(confirm,{confirm=it},Modifier.fillMaxWidth(),label={Text("Confirm password")},visualTransformation=PasswordVisualTransformation(),singleLine=true)
-                    Button(onClick={if(create){if(confirm!=p)vm.message="Your passwords do not match." else vm.signUp(n,e,phone,p,accountRole)}else vm.signIn(e,p)},Modifier.fillMaxWidth(),enabled=!vm.authLoading){Text(if(vm.authLoading)"Please wait…" else if(create)"Create account" else "Sign in")}
+                    Button(onClick={if(create){if(confirm!=p)vm.message="Your passwords do not match." else vm.signUp(n,e,phone,p,accountRole)}else vm.signIn(e,p)},Modifier.fillMaxWidth(),enabled=!vm.authLoading){if(vm.authLoading){CircularProgressIndicator(Modifier.size(18.dp),strokeWidth=2.dp,color=Color.White);Spacer(Modifier.width(8.dp))};Text(if(vm.authLoading)"Please wait…" else if(create)"Create account" else "Sign in")}
                     if(!create){TextButton(onClick={vm.requestPasswordReset(e)}){Text("Forgot password?")};OutlinedButton(onClick={vm.message="Google sign-in requires a configured Google OAuth client."},Modifier.fillMaxWidth()){Icon(Icons.Default.AccountCircle,null);Text("  Continue with Google")}}
                     TextButton(onClick={create=!create;vm.message=null;confirm=""}){Text(if(create)"Already registered? Sign in" else "New to ShaadiX? Create account")}
                 }
@@ -348,7 +351,30 @@ class ShaadiXViewModel(private val repository:ShaadiXBackendRepository=(AppConte
     LazyColumn(contentPadding=PaddingValues(bottom=20.dp),verticalArrangement=Arrangement.spacedBy(16.dp)){
         item{Header("Good morning, ${vm.name.substringBefore(" ")} ✨",end={IconButton(onClick={nav.navigate("notifications")}){Icon(Icons.Default.NotificationsNone,null,tint=Royal)}});Row(Modifier.padding(horizontal=20.dp),verticalAlignment=Alignment.CenterVertically){Icon(Icons.Default.LocationOn,null,tint=Violet);Text("Kochi, Kerala");Spacer(Modifier.weight(1f));TextButton(onClick={vm.message="Location selector · Kochi"}){Text("CHANGE")}}}
         item{Box(Modifier.fillMaxWidth().padding(horizontal=20.dp).height(190.dp).clip(RoundedCornerShape(24.dp))){
-            AsyncImage("https://images.unsplash.com/photo-151974149…950 tokens truncated…(horizontal=20.dp),color=Muted,style=MaterialTheme.typography.labelSmall)
+            AsyncImage("https://images.unsplash.com/photo-1519741497674-611481863552?w=1200",null,Modifier.fillMaxSize(),contentScale=ContentScale.Crop)
+            Box(Modifier.fillMaxSize().background(Brush.horizontalGradient(listOf(Color(0xEE351C4C),Color(0x665E2A64),Color.Transparent))))
+            Column(Modifier.align(Alignment.CenterStart).padding(18.dp)){Text("YOUR DAY, BEAUTIFULLY DONE",color=Gold,style=MaterialTheme.typography.labelSmall,fontWeight=FontWeight.Bold);Text("Big moments\nstart right here.",color=Color.White,style=MaterialTheme.typography.headlineSmall,fontWeight=FontWeight.Bold);Button(onClick={nav.navigate("explore")},colors=ButtonDefaults.buttonColors(containerColor=Color.White,contentColor=Royal)){Text("Find your people  →")}}
+        }}
+        item{Section("Celebrate your way","View all"){nav.navigate("categories")};LazyRow(contentPadding=PaddingValues(horizontal=20.dp),horizontalArrangement=Arrangement.spacedBy(10.dp)){items(SampleData.categories){c->
+            Column(Modifier.width(74.dp).clickable{vm.category="All";nav.navigate("explore")},horizontalAlignment=Alignment.CenterHorizontally){Box(Modifier.size(54.dp).clip(RoundedCornerShape(18.dp)).background(Lilac),Alignment.Center){Text(when(c){"Wedding"->"💍";"Birthday"->"🎂";"College Function"->"🎓";"Corporate"->"✨";else->"✦"},style=MaterialTheme.typography.titleLarge)};Text(c,maxLines=1,overflow=TextOverflow.Ellipsis,style=MaterialTheme.typography.labelSmall)}
+        }}}
+        item{Section("Made for your moments","See all"){nav.navigate("explore")};LazyRow(contentPadding=PaddingValues(horizontal=20.dp),horizontalArrangement=Arrangement.spacedBy(12.dp)){items(vm.services.take(4)){Tile(it,vm,nav,true)}}}
+        item{Section("Your next celebration");val b=vm.bookings.firstOrNull();if(b==null)Blank("No upcoming bookings yet","Find a service to begin planning.")else Card(Modifier.fillMaxWidth().padding(horizontal=20.dp).clickable{nav.navigate("bookings")},colors=CardDefaults.cardColors(containerColor=Color.White),shape=RoundedCornerShape(18.dp)){
+            Row(Modifier.padding(13.dp),verticalAlignment=Alignment.CenterVertically){AsyncImage(b.service.image,null,Modifier.size(58.dp).clip(RoundedCornerShape(12.dp)),contentScale=ContentScale.Crop);Column(Modifier.weight(1f).padding(start=12.dp)){Text(b.event,color=Muted);Text(b.service.title,fontWeight=FontWeight.Bold);Text("${b.date} · ${b.guests} guests",color=Muted)};Icon(Icons.Default.ArrowForward,null,tint=Royal)}
+        }}
+    }
+}
+
+@Composable private fun Explore(vm:ShaadiXViewModel,nav:NavHostController){
+    var showFilters by remember{mutableStateOf(false)}
+    val state by vm.servicesState.collectAsState()
+    LaunchedEffect(vm.search,vm.category){delay(450);vm.refreshServices()}
+    Column(Modifier.fillMaxSize()){
+        Header("Explore","Find the right people for your big day")
+        OutlinedTextField(vm.search,{vm.search=it},Modifier.fillMaxWidth().padding(horizontal=18.dp),placeholder={Text("Search events, venues, services…")},leadingIcon={Icon(Icons.Default.Search,null,tint=Violet)},trailingIcon={IconButton(onClick={showFilters=true}){Icon(Icons.Default.Tune,"Filter",tint=Royal)}},shape=RoundedCornerShape(15.dp),singleLine=true)
+        LazyRow(Modifier.padding(vertical=9.dp),contentPadding=PaddingValues(horizontal=18.dp),horizontalArrangement=Arrangement.spacedBy(7.dp)){items(listOf("All")+SampleData.serviceTypes){c->FilterChip(vm.category.equals(c,true),{vm.category=c},label={Text(c)})}}
+        Row(Modifier.padding(horizontal=20.dp),verticalAlignment=Alignment.CenterVertically){Text("${vm.results().size} thoughtful picks",Modifier.weight(1f),color=Muted);TextButton(onClick={showFilters=true}){Icon(Icons.Default.Tune,null);Text(" Filters")}}
+        if(state is UiState.Error)Text((state as UiState.Error).message,Modifier.padding(horizontal=20.dp),color=Muted,style=MaterialTheme.typography.labelSmall)
         if(state is UiState.Loading&&vm.services.isEmpty())Box(Modifier.fillMaxWidth().weight(1f),contentAlignment=Alignment.Center){CircularProgressIndicator(color=Royal)}
         else {val list=vm.results();if(list.isEmpty())Box(Modifier.fillMaxWidth().weight(1f),contentAlignment=Alignment.Center){Blank("Nothing found yet","Try a different category or search.")}else LazyColumn(Modifier.weight(1f),contentPadding=PaddingValues(horizontal=18.dp,vertical=4.dp),verticalArrangement=Arrangement.spacedBy(12.dp)){items(list,key={it.id}){Tile(it,vm,nav)};if(vm.hasMoreServices)item{TextButton(onClick=vm::loadMoreServices,Modifier.fillMaxWidth()){Text("Load more")}}}}
     }

@@ -28,8 +28,11 @@ export const register = asyncHandler(async (req, res) => {
 });
 
 export const login = asyncHandler(async (req, res) => {
-  const user = await User.findOne({ email: req.body.email.toLowerCase() }).select('+password');
-  if (!user || !user.isActive || !(await user.comparePassword(req.body.password))) throw new ApiError(401, 'Email or password is incorrect.');
+  const identifier = req.body.identifier.trim();
+  const user = await User.findOne(identifier.includes('@')
+    ? { email: identifier.toLowerCase() }
+    : { phone: identifier }).select('+password');
+  if (!user || !user.isActive || !(await user.comparePassword(req.body.password))) throw new ApiError(401, 'Email/phone or password is incorrect.');
   if (!user.isVerified) throw new ApiError(403, 'Verify your email before signing in.');
   return ok(res, await issueTokens(user), 'Signed in successfully.');
 });
